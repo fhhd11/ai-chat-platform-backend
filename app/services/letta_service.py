@@ -50,7 +50,7 @@ class LettaService:
                 tools=config.tools,
                 # Minimal LLM config required for creation
                 llm_config={
-                    "model": "gemini/gemini-2.5-flash",
+                    "model": "gpt-4o",
                     "model_endpoint_type": "openai",
                     "context_window": 128000
                 },
@@ -68,7 +68,7 @@ class LettaService:
             modified_agent = self.client.agents.modify(
                 agent_id=agent.id,
                 llm_config={
-                    "model": "gemini/gemini-2.5-flash",
+                    "model": "gpt-4o",
                     "model_endpoint_type": "openai",
                     "model_endpoint": f"{settings.backend_base_url}/api/v1/llm-proxy/{agent.id}",
                     "provider_name": "proxy",
