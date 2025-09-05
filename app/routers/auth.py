@@ -45,14 +45,26 @@ async def register(user_data: UserRegister):
         
         logger.info(f"Successfully registered user {user_id}")
         
-        # In a real implementation, Supabase would provide the actual tokens
+        # Step 5: Sign in the user to get real tokens
+        auth_response = supabase_service.client.auth.sign_in_with_password({
+            "email": user_data.email,
+            "password": user_data.password
+        })
+        
+        if not auth_response.user or not auth_response.session:
+            # Fallback if sign-in fails - user created but need to sign in manually
+            raise HTTPException(
+                status_code=status.HTTP_201_CREATED,
+                detail="User created successfully. Please sign in to get access token."
+            )
+        
         return TokenResponse(
-            access_token="mock_access_token",  # Replace with real Supabase token
-            expires_in=3600,
+            access_token=auth_response.session.access_token,
+            expires_in=auth_response.session.expires_in or 3600,
             user=UserResponse(
                 id=user_profile.id,
                 email=user_profile.email,
-                name=user_data.name,
+                name=user_data.name,  # Use name from registration data
                 created_at=user_profile.created_at
             )
         )
@@ -98,7 +110,7 @@ async def login(user_data: UserLogin):
             user=UserResponse(
                 id=user_profile.id,
                 email=user_profile.email,
-                name=None,
+                name=None,  # TODO: Add name field to user_profiles table
                 created_at=user_profile.created_at
             )
         )
@@ -132,14 +144,22 @@ async def refresh_token(credentials: HTTPAuthorizationCredentials = Depends(secu
                 detail="User not found"
             )
         
-        # In a real implementation, you would refresh the token with Supabase
+        # Refresh the token with Supabase
+        refresh_response = supabase_service.client.auth.refresh_session()
+        
+        if not refresh_response.session:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Failed to refresh token"
+            )
+        
         return TokenResponse(
-            access_token="new_mock_access_token",  # Replace with real refreshed token
-            expires_in=3600,
+            access_token=refresh_response.session.access_token,
+            expires_in=refresh_response.session.expires_in or 3600,
             user=UserResponse(
                 id=user_profile.id,
                 email=user_profile.email,
-                name=None,
+                name=None,  # TODO: Add name field to user_profiles table
                 created_at=user_profile.created_at
             )
         )
@@ -159,7 +179,7 @@ async def get_current_user_info(current_user: UserProfile = Depends(get_current_
         return UserResponse(
             id=current_user.id,
             email=current_user.email,
-            name=None,  # Add name field to UserProfile model if needed
+            name=None,  # TODO: Add name field to user_profiles table
             created_at=current_user.created_at
         )
         
