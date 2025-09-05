@@ -23,6 +23,11 @@ class Settings(BaseSettings):
     litellm_base_url: str = "https://litellm-production-1c8b.up.railway.app"
     litellm_master_key: str
     
+    # User budget settings
+    user_default_budget: float = 10.0  # Default budget for new users in USD
+    user_budget_duration: str = "1mo"  # Budget duration (e.g., "1d", "1w", "1mo", "1y")
+    user_budget_reset: bool = True  # Whether budget resets after duration
+    
     # Backend settings
     backend_base_url: str = "http://localhost:8000"  # Our backend URL for proxy endpoints
     

@@ -39,11 +39,20 @@ async def get_user_usage(
         # Get billing information from LiteLLM
         litellm_usage = await litellm_service.get_user_usage(current_user.id, current_user.litellm_key)
         
+        # Get budget information from LiteLLM
+        budget_info = await litellm_service.get_user_budget(current_user.id)
+        
         # Combine data
         usage_response = {
             "profile": current_user,
             "database_usage": db_usage,
             "billing_usage": litellm_usage,
+            "budget_info": budget_info or {
+                "max_budget": 0,
+                "current_spend": 0,
+                "budget_duration": "1mo",
+                "budget_reset": True
+            },
             "summary": {
                 "total_messages": db_usage["total_usage"]["total_messages"],
                 "total_tokens": db_usage["total_usage"]["total_tokens"],
@@ -52,7 +61,8 @@ async def get_user_usage(
                 "today_tokens": db_usage["today_usage"].total_tokens,
                 "today_cost": db_usage["today_usage"].total_cost,
                 "litellm_cost": litellm_usage.get("total_cost", 0),
-                "litellm_requests": litellm_usage.get("total_requests", 0)
+                "litellm_requests": litellm_usage.get("total_requests", 0),
+                "budget_remaining": (budget_info.get("max_budget", 0) - budget_info.get("current_spend", 0)) if budget_info else 0
             }
         }
         
@@ -153,6 +163,105 @@ async def reset_billing_key(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to reset billing key: {str(e)}"
+        )
+
+
+@router.post("/budget")
+async def update_user_budget(
+    max_budget: float,
+    duration: str = "1mo",
+    reset: bool = True,
+    current_user: UserProfile = Depends(get_current_user)
+):
+    """Update user budget settings"""
+    try:
+        from app.config import settings
+        
+        # Validate budget amount
+        if max_budget < 0:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Budget amount must be positive"
+            )
+        
+        if max_budget > 1000:  # Safety limit
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Budget amount cannot exceed $1000"
+            )
+        
+        # Validate duration format
+        valid_durations = ["1d", "1w", "1mo", "3mo", "6mo", "1y"]
+        if duration not in valid_durations:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Invalid duration. Must be one of: {', '.join(valid_durations)}"
+            )
+        
+        # Update budget in LiteLLM
+        success = await litellm_service.update_user_budget(
+            user_id=current_user.id,
+            max_budget=max_budget,
+            duration=duration,
+            reset=reset
+        )
+        
+        if not success:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Failed to update budget"
+            )
+        
+        return {
+            "status": "success",
+            "message": f"Budget updated to ${max_budget} for {duration}",
+            "max_budget": max_budget,
+            "duration": duration,
+            "reset_enabled": reset
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Update budget error: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to update budget: {str(e)}"
+        )
+
+
+@router.get("/budget")
+async def get_user_budget(
+    current_user: UserProfile = Depends(get_current_user)
+):
+    """Get user budget information"""
+    try:
+        budget_info = await litellm_service.get_user_budget(current_user.id)
+        
+        if not budget_info:
+            from app.config import settings
+            return {
+                "max_budget": settings.user_default_budget,
+                "current_spend": 0,
+                "budget_duration": settings.user_budget_duration,
+                "budget_reset": settings.user_budget_reset,
+                "budget_remaining": settings.user_default_budget,
+                "status": "default_budget"
+            }
+        
+        remaining = budget_info.get("max_budget", 0) - budget_info.get("current_spend", 0)
+        
+        return {
+            **budget_info,
+            "budget_remaining": max(0, remaining),
+            "status": "active"
+        }
+        
+    except Exception as e:
+        logger.error(f"Get budget error: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to get budget information"
         )
 
 

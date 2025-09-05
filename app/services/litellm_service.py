@@ -18,13 +18,23 @@ class LiteLLMService:
 
     @retry(stop=stop_after_attempt(3), wait=wait_exponential(multiplier=1, min=4, max=10))
     async def create_user(self, user_id: str) -> Optional[str]:
-        """Create new user in LiteLLM and get their API key"""
+        """Create new user in LiteLLM with budget configuration and get their API key"""
         try:
-            async with httpx.AsyncClient() as client:
+            from app.config import settings
+            
+            async with httpx.AsyncClient(timeout=30.0) as client:
+                # Create user with budget configuration
+                user_data = {
+                    "user_id": user_id,
+                    "max_budget": settings.user_default_budget,
+                    "budget_duration": settings.user_budget_duration,
+                    "budget_reset": settings.user_budget_reset
+                }
+                
                 response = await client.post(
                     f"{self.base_url}/user/new",
                     headers=self.headers,
-                    json={"user_id": user_id}
+                    json=user_data
                 )
                 
                 response.raise_for_status()
@@ -34,7 +44,7 @@ class LiteLLMService:
                 api_key = data.get("key") or data.get("api_key") or data.get("token")
                 
                 if api_key:
-                    logger.info(f"Created LiteLLM user {user_id} with key: {api_key[:10]}..." if api_key else "NO KEY")
+                    logger.info(f"Created LiteLLM user {user_id} with ${settings.user_default_budget} budget and key: {api_key[:10]}...")
                     return api_key
                 else:
                     logger.error(f"No API key in LiteLLM response: {data}")
@@ -191,6 +201,56 @@ class LiteLLMService:
         except Exception as e:
             logger.error(f"Error deleting user: {e}")
             raise
+
+    async def update_user_budget(self, user_id: str, max_budget: float, duration: str = "1mo", reset: bool = True) -> bool:
+        """Update user budget settings"""
+        try:
+            async with httpx.AsyncClient(timeout=30.0) as client:
+                budget_data = {
+                    "user_id": user_id,
+                    "max_budget": max_budget,
+                    "budget_duration": duration,
+                    "budget_reset": reset
+                }
+                
+                response = await client.post(
+                    f"{self.base_url}/user/budget",
+                    headers=self.headers,
+                    json=budget_data
+                )
+                
+                if response.status_code in [200, 201]:
+                    logger.info(f"Updated budget for user {user_id} to ${max_budget}")
+                    return True
+                else:
+                    logger.error(f"Failed to update budget: {response.status_code} - {response.text}")
+                    return False
+                    
+        except Exception as e:
+            logger.error(f"Error updating user budget: {e}")
+            return False
+
+    async def get_user_budget(self, user_id: str) -> Optional[Dict[str, Any]]:
+        """Get user budget information"""
+        try:
+            async with httpx.AsyncClient(timeout=10.0) as client:
+                response = await client.get(
+                    f"{self.base_url}/user/budget",
+                    headers=self.headers,
+                    params={"user_id": user_id}
+                )
+                
+                if response.status_code == 200:
+                    return response.json()
+                elif response.status_code == 404:
+                    return None
+                else:
+                    logger.error(f"Failed to get budget: {response.status_code} - {response.text}")
+                    return None
+                    
+        except Exception as e:
+            logger.error(f"Error getting user budget: {e}")
+            return None
 
     async def health_check(self) -> bool:
         """Check if LiteLLM service is healthy"""
