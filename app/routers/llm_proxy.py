@@ -200,7 +200,7 @@ async def test_proxy(agent_id: str):
         return {
             "agent_id": agent_id,
             "user_id": user_profile.id,
-            "user_name": user_profile.name,
+            "user_email": user_profile.email,
             "has_litellm_key": bool(user_profile.litellm_key),
             "litellm_key_prefix": user_profile.litellm_key[:10] + "..." if user_profile.litellm_key else None
         }

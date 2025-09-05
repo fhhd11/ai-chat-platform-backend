@@ -37,7 +37,7 @@ class LettaService:
                 ]
             )
             
-            # Create agent using LiteLLM endpoint and user's API key
+            # First create agent to get the ID
             agent = self.client.agents.create(
                 memory_blocks=[
                     {
@@ -47,25 +47,31 @@ class LettaService:
                     }
                     for block in config.memory_blocks
                 ],
-                # Use proxy endpoint with user's unique agent endpoint
+                tools=config.tools
+            )
+            
+            logger.info(f"Created Letta agent {agent.id} for user {user_id}")
+            
+            # Now update the agent with proxy endpoint using actual agent ID
+            updated_agent = self.client.agents.update(
+                agent_id=agent.id,
                 llm_config={
                     "model": "gemini/gemini-2.5-flash",  # Gemini model configured on LiteLLM
                     "model_endpoint_type": "openai",
-                    "model_endpoint": f"{settings.backend_base_url}/api/v1/llm-proxy/agent-{user_id}",
+                    "model_endpoint": f"{settings.backend_base_url}/api/v1/llm-proxy/{agent.id}",
                     "provider_name": "proxy",
                     "context_window": 128000  # Gemini 2.5 Flash context window
                 },
                 embedding_config={
                     "embedding_model": "text-embedding-ada-002",
                     "embedding_endpoint_type": "openai", 
-                    "embedding_endpoint": f"{settings.backend_base_url}/api/v1/llm-proxy/agent-{user_id}",
+                    "embedding_endpoint": f"{settings.backend_base_url}/api/v1/llm-proxy/{agent.id}",
                     "provider_name": "proxy",
                     "embedding_dim": 1536  # text-embedding-ada-002 dimensions
-                },
-                tools=config.tools
+                }
             )
             
-            logger.info(f"Created Letta agent {agent.id} for user {user_id}")
+            logger.info(f"Updated Letta agent {agent.id} with proxy endpoint")
             return agent.id
             
         except Exception as e:
