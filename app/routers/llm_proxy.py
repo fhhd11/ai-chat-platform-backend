@@ -16,17 +16,7 @@ security = HTTPBearer()
 
 
 async def get_user_by_agent_id(agent_id: str) -> UserProfile:
-    """Get user profile by agent_id or user-{user_id}"""
-    # Check if this is a user-based endpoint (user-{user_id})
-    if agent_id.startswith("user-"):
-        user_id = agent_id[5:]  # Remove "user-" prefix
-        user_profile = await supabase_service.get_user_profile(user_id)
-        if not user_profile:
-            logger.error(f"No user found for user_id: {user_id}")
-            raise HTTPException(status_code=404, detail=f"User {user_id} not found")
-        return user_profile
-    
-    # Otherwise, look up by agent_id in the database
+    """Get user profile by agent_id"""
     user_profile = await supabase_service.get_user_by_agent_id(agent_id)
     if not user_profile:
         logger.error(f"No user found for agent_id: {agent_id}")
