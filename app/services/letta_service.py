@@ -12,11 +12,14 @@ logger = logging.getLogger(__name__)
 class LettaService:
     def __init__(self):
         import httpx
+        # Create Letta client with extended timeout
         self.client = Letta(
             base_url=settings.letta_base_url,
-            token=settings.letta_api_token,  # Can be None for self-hosted
-            timeout=httpx.Timeout(timeout=120.0)  # 2 minutes timeout for LLM requests
+            token=settings.letta_api_token  # Can be None for self-hosted
         )
+        # Set extended timeout on the underlying httpx client
+        if hasattr(self.client, '_client'):
+            self.client._client.timeout = httpx.Timeout(timeout=300.0)  # 5 minutes
 
     @retry(stop=stop_after_attempt(3), wait=wait_exponential(multiplier=1, min=4, max=10))
     async def create_agent(self, user_id: str, user_name: Optional[str], litellm_key: str) -> str:
