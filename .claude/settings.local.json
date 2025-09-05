@@ -1,0 +1,17 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(docker-compose build:*)",
+      "Bash(docker-compose up:*)",
+      "Bash(docker-compose:*)",
+      "Bash(curl:*)",
+      "WebFetch(domain:docs.letta.com)",
+      "WebSearch",
+      "Bash(JWT_TOKEN=\"eyJhbGciOiJIUzI1NiIsImtpZCI6InBCMHFmdEVVVHFuRkxoaUUiLCJ0eXAiOiJKV1QifQ.eyJpc3MiOiJodHRwczovL3B0Y3BlbWZva3dqZ3BqZ21iZ29qLnN1cGFiYXNlLmNvL2F1dGgvdjEiLCJzdWIiOiI0ZWEyZTQ2MS0xNmZiLTQ4MGQtYTk0OS1lZTE2MDIzZTlkZDQiLCJhdWQiOiJhdXRoZW50aWNhdGVkIiwiZXhwIjoxNzU3MDA2NDUyLCJpYXQiOjE3NTcwMDI4NTIsImVtYWlsIjoiY2hhdC11c2VyQGV4YW1wbGUuY29tIiwicGhvbmUiOiIiLCJhcHBfbWV0YWRhdGEiOnsicHJvdmlkZXIiOiJlbWFpbCIsInByb3ZpZGVycyI6WyJlbWFpbCJdfSwidXNlcl9tZXRhZGF0YSI6eyJlbWFpbF92ZXJpZmllZCI6dHJ1ZX0sInJvbGUiOiJhdXRoZW50aWNhdGVkIiwiYWFsIjoiYWFsMSIsImFtciI6W3sibWV0aG9kIjoicGFzc3dvcmQiLCJ0aW1lc3RhbXAiOjE3NTcwMDI4NTJ9XSwic2Vzc2lvbl9pZCI6Ijg1MTA5NjA4LWViMDUtNDBkZi05NmIwLWVmMDdkNDczMDBkOCIsImlzX2Fub255bW91cyI6ZmFsc2V9.zAL_uFn5qLCc3OC8xsl_x_ljw6dA2NySgU_UTlFg5T4\")",
+      "Bash(git init:*)",
+      "Bash(git add:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}
