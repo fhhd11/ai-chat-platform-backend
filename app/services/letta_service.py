@@ -53,6 +53,12 @@ class LettaService:
                     "model": "gemini/gemini-2.5-flash",
                     "model_endpoint_type": "openai",
                     "context_window": 128000
+                },
+                # Minimal embedding config required for creation  
+                embedding_config={
+                    "embedding_model": "text-embedding-ada-002",
+                    "embedding_endpoint_type": "openai",
+                    "embedding_dim": 1536
                 }
             )
             
