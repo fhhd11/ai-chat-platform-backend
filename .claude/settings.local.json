@@ -21,7 +21,8 @@
       "Bash(railway domain:*)",
       "mcp__Railway__list-variables",
       "Bash(railway logs:*)",
-      "Bash(git push:*)"
+      "Bash(git push:*)",
+      "Bash(JWT_TOKEN=\"eyJhbGciOiJIUzI1NiIsImtpZCI6InBCMHFmdEVVVHFuRkxoaUUiLCJ0eXAiOiJKV1QifQ.eyJpc3MiOiJodHRwczovL3B0Y3BlbWZva3dqZ3BqZ21iZ29qLnN1cGFiYXNlLmNvL2F1dGgvdjEiLCJzdWIiOiI3Zjc4Y2VjOC1hYTY3LTQ5MGEtYTQ0NC1hYzdhZmI1Njk2YjEiLCJhdWQiOiJhdXRoZW50aWNhdGVkIiwiZXhwIjoxNzU3MDg5MDgxLCJpYXQiOjE3NTcwODU0ODEsImVtYWlsIjoidGVzdEBleGFtcGxlLmNvbSIsInBob25lIjoiIiwiYXBwX21ldGFkYXRhIjp7InByb3ZpZGVyIjoiZW1haWwiLCJwcm92aWRlcnMiOlsiZW1haWwiXX0sInVzZXJfbWV0YWRhdGEiOnsiZW1haWxfdmVyaWZpZWQiOnRydWV9LCJyb2xlIjoiYXV0aGVudGljYXRlZCIsImFhbCI6ImFhbDEiLCJhbXIiOlt7Im1ldGhvZCI6InBhc3N3b3JkIiwidGltZXN0YW1wIjoxNzU3MDg1NDgxfV0sInNlc3Npb25faWQiOiIwMDk5MDgwMi1hMjgyLTRiZTUtYWMyNC03YWNkNWQ5Y2Q4MmQiLCJpc19hbm9ueW1vdXMiOmZhbHNlfQ.OJStr3dotSFOM0hRr9szm0lcs1eH_EOWr47xTfPuinE\")"
     ],
     "deny": [],
     "ask": []

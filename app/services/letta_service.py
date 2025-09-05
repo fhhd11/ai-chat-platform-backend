@@ -179,7 +179,9 @@ class LettaService:
     async def get_agent_status(self, agent_id: str) -> Optional[AgentStatus]:
         """Get agent status and info"""
         try:
-            agent = self.client.agents.get(agent_id)
+            # List all agents and find the specific one
+            agents = self.client.agents.list()
+            agent = next((a for a in agents if a.id == agent_id), None)
             
             if agent:
                 return AgentStatus(

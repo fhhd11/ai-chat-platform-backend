@@ -24,9 +24,21 @@ async def get_user_by_agent_id(agent_id: str) -> UserProfile:
     return user_profile
 
 
-async def verify_letta_request(credentials: HTTPAuthorizationCredentials = Depends(security)) -> bool:
+async def verify_letta_request(request: Request) -> bool:
     """Verify that request comes from Letta server"""
-    if credentials.credentials != settings.letta_global_api_key:
+    # Check Authorization header in different formats
+    auth_header = request.headers.get("authorization")
+    if not auth_header:
+        raise HTTPException(status_code=401, detail="Missing authorization header")
+    
+    # Handle Bearer format
+    if auth_header.startswith("Bearer "):
+        token = auth_header[7:]  # Remove "Bearer "
+    else:
+        token = auth_header
+    
+    if token != settings.letta_global_api_key:
+        logger.error(f"Invalid Letta API key. Expected: {settings.letta_global_api_key}, got: {token}")
         raise HTTPException(status_code=401, detail="Invalid Letta API key")
     return True
 
@@ -35,7 +47,7 @@ async def verify_letta_request(credentials: HTTPAuthorizationCredentials = Depen
 async def proxy_llm_request(
     agent_id: str, 
     request: Request,
-    _: bool = Depends(verify_letta_request)
+    _: bool = Depends(lambda req=request: verify_letta_request(req))
 ):
     """
     Proxy endpoint for Letta agents.
@@ -149,7 +161,7 @@ async def proxy_streaming_request(request_body: Dict[str, Any], litellm_key: str
 async def proxy_embeddings_request(
     agent_id: str,
     request: Request,
-    _: bool = Depends(verify_letta_request)
+    _: bool = Depends(lambda req=request: verify_letta_request(req))
 ):
     """Proxy embeddings request to LiteLLM"""
     try:
