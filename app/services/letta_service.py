@@ -11,17 +11,10 @@ logger = logging.getLogger(__name__)
 
 class LettaService:
     def __init__(self):
-        import httpx
-        # Create custom httpx client with extended timeout
-        custom_client = httpx.AsyncClient(
-            timeout=httpx.Timeout(timeout=300.0)  # 5 minutes for all operations
-        )
-        
-        # Create Letta client with custom httpx client
+        # Create Letta client with standard configuration
         self.client = Letta(
             base_url=settings.letta_base_url,
-            token=settings.letta_api_token,  # Can be None for self-hosted
-            http_client=custom_client
+            token=settings.letta_api_token  # Can be None for self-hosted
         )
 
     @retry(stop=stop_after_attempt(3), wait=wait_exponential(multiplier=1, min=4, max=10))
@@ -99,82 +92,113 @@ class LettaService:
             raise
 
     async def send_message(self, agent_id: str, message: str) -> AsyncGenerator[Dict[str, Any], None]:
-        """Send message to agent and stream response"""
+        """Send message to agent and stream response using direct HTTP calls"""
+        import httpx
+        import json
+        
         try:
-            # Send message to agent with streaming
-            stream = self.client.agents.messages.create_stream(
-                agent_id=agent_id,
-                messages=[{"role": "user", "content": message}],
-                stream_tokens=True
-            )
-            
-            full_response = ""
-            usage_stats = None
-            
-            for chunk in stream:
-                if chunk.message_type == "assistant_message" and chunk.content:
-                    full_response += chunk.content
-                    yield {
-                        "type": "message",
-                        "content": chunk.content,
-                        "data": {
-                            "message_type": chunk.message_type,
-                            "full_response": full_response
-                        }
-                    }
-                
-                elif chunk.message_type == "reasoning_message" and chunk.reasoning:
-                    yield {
-                        "type": "reasoning",
-                        "content": chunk.reasoning,
-                        "data": {
-                            "message_type": chunk.message_type
-                        }
-                    }
-                
-                elif chunk.message_type == "tool_call_message":
-                    yield {
-                        "type": "tool_call",
-                        "content": f"Tool: {chunk.tool_call.name}",
-                        "data": {
-                            "message_type": chunk.message_type,
-                            "tool_name": chunk.tool_call.name,
-                            "tool_arguments": chunk.tool_call.arguments
-                        }
-                    }
-                
-                elif chunk.message_type == "tool_return_message":
-                    yield {
-                        "type": "tool_return",
-                        "content": str(chunk.tool_return),
-                        "data": {
-                            "message_type": chunk.message_type,
-                            "tool_return": chunk.tool_return
-                        }
-                    }
-                
-                elif chunk.message_type == "usage_statistics":
-                    usage_stats = {
-                        "total_tokens": getattr(chunk, 'total_tokens', 0),
-                        "prompt_tokens": getattr(chunk, 'prompt_tokens', 0),
-                        "completion_tokens": getattr(chunk, 'completion_tokens', 0),
-                        "cost": getattr(chunk, 'cost', 0.0)
-                    }
-                    yield {
-                        "type": "usage",
-                        "content": None,
-                        "data": usage_stats
-                    }
-            
-            # Send final response with complete data
-            yield {
-                "type": "done",
-                "content": full_response,
-                "data": {
-                    "full_response": full_response,
-                    "usage_stats": usage_stats
+            # Create async HTTP client with extended timeout
+            async with httpx.AsyncClient(timeout=300.0) as client:
+                # Prepare request data
+                request_data = {
+                    "messages": [{"role": "user", "content": message}],
+                    "stream_tokens": True
                 }
-            }
+                
+                # Make streaming request to Letta
+                url = f"{settings.letta_base_url}/v1/agents/{agent_id}/messages/stream"
+                headers = {"Content-Type": "application/json"}
+                if settings.letta_api_token:
+                    headers["Authorization"] = f"Bearer {settings.letta_api_token}"
+                
+                logger.info(f"Sending async streaming request to Letta: {url}")
+                
+                full_response = ""
+                usage_stats = None
+                
+                async with client.stream("POST", url, json=request_data, headers=headers) as response:
+                    if response.status_code != 200:
+                        error_msg = f"Letta API error {response.status_code}: {await response.aread()}"
+                        logger.error(error_msg)
+                        yield {
+                            "type": "error",
+                            "content": error_msg,
+                            "data": {"error": error_msg}
+                        }
+                        return
+                    
+                    # Process streaming response
+                    async for line in response.aiter_lines():
+                        if not line.strip():
+                            continue
+                            
+                        # Parse Server-Sent Events format
+                        if line.startswith("data: "):
+                            try:
+                                data_str = line[6:]  # Remove "data: " prefix
+                                if data_str == "[DONE]":
+                                    break
+                                    
+                                chunk_data = json.loads(data_str)
+                                message_type = chunk_data.get("message_type", "")
+                                
+                                if message_type == "assistant_message" and chunk_data.get("content"):
+                                    content = chunk_data["content"]
+                                    full_response += content
+                                    yield {
+                                        "type": "message",
+                                        "content": content,
+                                        "data": {
+                                            "message_type": message_type,
+                                            "full_response": full_response
+                                        }
+                                    }
+                                
+                                elif message_type == "reasoning_message" and chunk_data.get("reasoning"):
+                                    yield {
+                                        "type": "reasoning",
+                                        "content": chunk_data["reasoning"],
+                                        "data": {"message_type": message_type}
+                                    }
+                                
+                                elif message_type == "tool_call_message":
+                                    tool_call = chunk_data.get("tool_call", {})
+                                    yield {
+                                        "type": "tool_call",
+                                        "content": f"Tool: {tool_call.get('name', 'unknown')}",
+                                        "data": {
+                                            "message_type": message_type,
+                                            "tool_name": tool_call.get("name"),
+                                            "tool_arguments": tool_call.get("arguments")
+                                        }
+                                    }
+                                
+                                elif message_type == "usage_statistics":
+                                    usage_stats = {
+                                        "total_tokens": chunk_data.get('total_tokens', 0),
+                                        "prompt_tokens": chunk_data.get('prompt_tokens', 0),
+                                        "completion_tokens": chunk_data.get('completion_tokens', 0),
+                                        "cost": chunk_data.get('cost', 0.0)
+                                    }
+                                    yield {
+                                        "type": "usage",
+                                        "content": None,
+                                        "data": usage_stats
+                                    }
+                                    
+                            except json.JSONDecodeError as je:
+                                logger.warning(f"Failed to parse streaming chunk: {line}, error: {je}")
+                                continue
+                
+                # Send final response
+                yield {
+                    "type": "done",
+                    "content": full_response,
+                    "data": {
+                        "full_response": full_response,
+                        "usage_stats": usage_stats
+                    }
+                }
             
         except Exception as e:
             logger.error(f"Error sending message to agent {agent_id}: {e}")
