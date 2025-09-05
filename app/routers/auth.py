@@ -40,7 +40,8 @@ async def register(user_data: UserRegister):
             user_id=user_id,
             email=user_data.email,
             litellm_key=litellm_key,
-            letta_agent_id=letta_agent_id
+            letta_agent_id=letta_agent_id,
+            name=user_data.name
         )
         
         logger.info(f"Successfully registered user {user_id}")
@@ -64,7 +65,7 @@ async def register(user_data: UserRegister):
             user=UserResponse(
                 id=user_profile.id,
                 email=user_profile.email,
-                name=user_data.name,  # Use name from registration data
+                name=user_profile.name,  # Now using name from database
                 created_at=user_profile.created_at
             )
         )
@@ -110,7 +111,7 @@ async def login(user_data: UserLogin):
             user=UserResponse(
                 id=user_profile.id,
                 email=user_profile.email,
-                name=None,  # TODO: Add name field to user_profiles table
+                name=user_profile.name,
                 created_at=user_profile.created_at
             )
         )
@@ -159,7 +160,7 @@ async def refresh_token(credentials: HTTPAuthorizationCredentials = Depends(secu
             user=UserResponse(
                 id=user_profile.id,
                 email=user_profile.email,
-                name=None,  # TODO: Add name field to user_profiles table
+                name=user_profile.name,
                 created_at=user_profile.created_at
             )
         )
@@ -179,7 +180,7 @@ async def get_current_user_info(current_user: UserProfile = Depends(get_current_
         return UserResponse(
             id=current_user.id,
             email=current_user.email,
-            name=None,  # TODO: Add name field to user_profiles table
+            name=current_user.name,
             created_at=current_user.created_at
         )
         

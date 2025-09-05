@@ -40,12 +40,13 @@ class SupabaseService:
             logger.error(f"Error creating user via Auth: {e}")
             raise
 
-    async def create_user_profile(self, user_id: str, email: str, litellm_key: str, letta_agent_id: str) -> UserProfile:
+    async def create_user_profile(self, user_id: str, email: str, litellm_key: str, letta_agent_id: str, name: Optional[str] = None) -> UserProfile:
         """Create user profile after registration"""
         try:
             data = {
                 "id": user_id,
                 "email": email,
+                "name": name,
                 "litellm_key": litellm_key,
                 "letta_agent_id": letta_agent_id,
                 "agent_status": "active"

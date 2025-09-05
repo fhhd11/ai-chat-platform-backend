@@ -7,6 +7,7 @@ from decimal import Decimal
 class UserProfile(BaseModel):
     id: str
     email: EmailStr
+    name: Optional[str] = None
     litellm_key: Optional[str] = None
     letta_agent_id: Optional[str] = None
     agent_status: str = "active"
