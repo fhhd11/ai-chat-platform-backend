@@ -37,7 +37,7 @@ async def get_user_usage(
         db_usage = await supabase_service.get_usage_metrics(current_user.id)
         
         # Get billing information from LiteLLM
-        litellm_usage = await litellm_service.get_user_usage(current_user.id)
+        litellm_usage = await litellm_service.get_user_usage(current_user.id, current_user.litellm_key)
         
         # Combine data
         usage_response = {

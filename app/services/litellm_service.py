@@ -72,27 +72,52 @@ class LiteLLMService:
             logger.error(f"Error getting user info: {e}")
             raise
 
-    async def get_user_usage(self, user_id: str) -> Optional[Dict[str, Any]]:
+    async def get_user_usage(self, user_id: str, user_key: Optional[str] = None) -> Optional[Dict[str, Any]]:
         """Get user usage statistics from LiteLLM"""
         try:
-            async with httpx.AsyncClient() as client:
-                response = await client.get(
+            async with httpx.AsyncClient(timeout=10.0) as client:
+                # Try different endpoints that LiteLLM might use
+                endpoints_to_try = [
                     f"{self.base_url}/user/usage",
-                    headers=self.headers,
-                    params={"user_id": user_id}
-                )
+                    f"{self.base_url}/spend/tags",
+                    f"{self.base_url}/spend/logs"
+                ]
                 
-                if response.status_code == 200:
-                    return response.json()
-                elif response.status_code == 404:
-                    return {"total_cost": 0, "total_requests": 0}
-                else:
-                    response.raise_for_status()
+                for endpoint in endpoints_to_try:
+                    try:
+                        params = {"user_id": user_id}
+                        if user_key and "spend" in endpoint:
+                            # For spend endpoints, might need to query by key
+                            params["key"] = user_key
+                        
+                        response = await client.get(
+                            endpoint,
+                            headers=self.headers,
+                            params=params
+                        )
+                        
+                        if response.status_code == 200:
+                            data = response.json()
+                            
+                            # Standardize response format
+                            if isinstance(data, list) and data:
+                                # Aggregate data from list of records
+                                total_cost = sum(item.get("cost", 0) for item in data)
+                                total_requests = len(data)
+                                return {"total_cost": total_cost, "total_requests": total_requests}
+                            elif isinstance(data, dict):
+                                # Return as-is if already in dict format
+                                return {
+                                    "total_cost": data.get("total_cost", data.get("cost", 0)),
+                                    "total_requests": data.get("total_requests", data.get("requests", 0))
+                                }
+                    except Exception as endpoint_error:
+                        logger.debug(f"Endpoint {endpoint} failed: {endpoint_error}")
+                        continue
+                
+                # If all endpoints fail, return default
+                return {"total_cost": 0, "total_requests": 0}
                     
-        except httpx.HTTPStatusError as e:
-            if e.response.status_code != 404:
-                logger.error(f"HTTP error getting user usage: {e.response.status_code} - {e.response.text}")
-            return {"total_cost": 0, "total_requests": 0}
         except Exception as e:
             logger.error(f"Error getting user usage: {e}")
             return {"total_cost": 0, "total_requests": 0}

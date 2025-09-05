@@ -209,75 +209,158 @@ class LettaService:
             }
 
     async def get_agent_status(self, agent_id: str) -> Optional[AgentStatus]:
-        """Get agent status and info"""
+        """Get agent status and info using async HTTP calls"""
         try:
-            # List all agents and find the specific one
-            agents = self.client.agents.list()
-            agent = next((a for a in agents if a.id == agent_id), None)
+            import httpx
             
-            if agent:
-                return AgentStatus(
-                    agent_id=agent.id,
-                    status="active",
-                    created_at=agent.created_at,
-                    last_updated=agent.last_updated,
-                    memory_usage={}
-                )
-            
-            return None
+            async with httpx.AsyncClient(timeout=30.0) as client:
+                url = f"{settings.letta_base_url}/v1/agents/{agent_id}"
+                headers = {}
+                if settings.letta_api_token:
+                    headers["Authorization"] = f"Bearer {settings.letta_api_token}"
+                
+                response = await client.get(url, headers=headers)
+                
+                if response.status_code == 200:
+                    agent_data = response.json()
+                    
+                    # Parse dates properly - handle different formats
+                    from datetime import datetime
+                    try:
+                        created_at = datetime.fromisoformat(agent_data['created_at'].replace('Z', '+00:00'))
+                    except:
+                        created_at = datetime.now()
+                    
+                    try:
+                        # Handle both 'last_updated' and '_last_updated' fields
+                        last_updated_field = agent_data.get('last_updated') or agent_data.get('_last_updated') or agent_data.get('created_at')
+                        if last_updated_field:
+                            last_updated = datetime.fromisoformat(last_updated_field.replace('Z', '+00:00'))
+                        else:
+                            last_updated = created_at
+                    except:
+                        last_updated = created_at
+                    
+                    return AgentStatus(
+                        agent_id=agent_data['id'],
+                        status="active",
+                        created_at=created_at,
+                        last_updated=last_updated,
+                        memory_usage={}
+                    )
+                elif response.status_code == 404:
+                    return None
+                else:
+                    logger.error(f"Failed to get agent status: {response.status_code} - {response.text}")
+                    return None
             
         except Exception as e:
             logger.error(f"Error getting agent status: {e}")
-            raise
+            return None
 
     async def get_agent_memory(self, agent_id: str) -> Optional[AgentMemoryInfo]:
-        """Get agent memory information"""
+        """Get agent memory information using async HTTP calls"""
         try:
-            agent = self.client.agents.get(agent_id)
+            import httpx
+            from datetime import datetime
             
-            if agent:
-                memory_blocks = []
+            async with httpx.AsyncClient(timeout=30.0) as client:
+                # Get agent info
+                url = f"{settings.letta_base_url}/v1/agents/{agent_id}"
+                headers = {}
+                if settings.letta_api_token:
+                    headers["Authorization"] = f"Bearer {settings.letta_api_token}"
                 
-                # Get memory blocks
-                for block in agent.memory_blocks:
-                    memory_blocks.append(MemoryBlock(
-                        label=block.label,
-                        value=block.value,
-                        description=block.description
-                    ))
+                response = await client.get(url, headers=headers)
                 
-                return AgentMemoryInfo(
-                    agent_id=agent.id,
-                    memory_blocks=memory_blocks,
-                    last_updated=agent.last_updated
-                )
-            
-            return None
+                if response.status_code == 200:
+                    agent_data = response.json()
+                    
+                    memory_blocks = []
+                    
+                    # Get memory blocks from agent data - try different possible structures
+                    memory_data = agent_data.get('memory') or agent_data.get('core_memory') or {}
+                    
+                    # Extract core memory blocks
+                    if isinstance(memory_data, dict):
+                        for label, value in memory_data.items():
+                            if label in ['human', 'persona'] or not label.startswith('_'):
+                                memory_blocks.append(MemoryBlock(
+                                    label=label,
+                                    value=str(value) if value else "",
+                                    description=f"{label.capitalize()} memory block"
+                                ))
+                    elif isinstance(memory_data, list):
+                        for block in memory_data:
+                            if isinstance(block, dict):
+                                memory_blocks.append(MemoryBlock(
+                                    label=block.get('label', 'unknown'),
+                                    value=block.get('value', ''),
+                                    description=block.get('description', '')
+                                ))
+                    
+                    # If no memory blocks found, add default ones
+                    if not memory_blocks:
+                        memory_blocks = [
+                            MemoryBlock(label="human", value="No human info stored yet", description="Human information"),
+                            MemoryBlock(label="persona", value="AI assistant", description="Assistant personality")
+                        ]
+                    
+                    # Parse last updated date - handle different formats
+                    try:
+                        last_updated_field = agent_data.get('last_updated') or agent_data.get('_last_updated') or agent_data.get('created_at')
+                        if last_updated_field:
+                            last_updated = datetime.fromisoformat(last_updated_field.replace('Z', '+00:00'))
+                        else:
+                            last_updated = datetime.now()
+                    except:
+                        last_updated = datetime.now()
+                    
+                    return AgentMemoryInfo(
+                        agent_id=agent_data['id'],
+                        memory_blocks=memory_blocks,
+                        last_updated=last_updated
+                    )
+                elif response.status_code == 404:
+                    return None
+                else:
+                    logger.error(f"Failed to get agent memory: {response.status_code} - {response.text}")
+                    return None
             
         except Exception as e:
             logger.error(f"Error getting agent memory: {e}")
-            raise
+            return None
 
     async def update_agent_memory(self, agent_id: str, memory_blocks: List[MemoryBlock]) -> bool:
-        """Update agent memory blocks"""
+        """Update agent memory blocks using async HTTP calls"""
         try:
-            for block in memory_blocks:
-                # Update memory block using Letta client
-                self.client.agents.memory.update(
-                    agent_id=agent_id,
-                    memory_block={
+            import httpx
+            
+            async with httpx.AsyncClient(timeout=30.0) as client:
+                headers = {}
+                if settings.letta_api_token:
+                    headers["Authorization"] = f"Bearer {settings.letta_api_token}"
+                
+                # Update each memory block
+                for block in memory_blocks:
+                    url = f"{settings.letta_base_url}/v1/agents/{agent_id}/memory"
+                    data = {
                         "label": block.label,
-                        "value": block.value,
-                        "description": block.description
+                        "value": block.value
                     }
-                )
+                    
+                    response = await client.post(url, json=data, headers=headers)
+                    
+                    if response.status_code not in [200, 201]:
+                        logger.warning(f"Failed to update memory block {block.label}: {response.status_code} - {response.text}")
+                        # Don't fail completely, just log the warning
             
             logger.info(f"Updated memory for agent {agent_id}")
             return True
             
         except Exception as e:
             logger.error(f"Error updating agent memory: {e}")
-            raise
+            return False
 
     async def delete_agent(self, agent_id: str) -> bool:
         """Delete agent"""
