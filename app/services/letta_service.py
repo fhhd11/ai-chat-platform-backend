@@ -37,7 +37,7 @@ class LettaService:
                 ]
             )
             
-            # First create agent to get the ID
+            # First create agent with basic config to get the ID
             agent = self.client.agents.create(
                 memory_blocks=[
                     {
@@ -47,7 +47,13 @@ class LettaService:
                     }
                     for block in config.memory_blocks
                 ],
-                tools=config.tools
+                tools=config.tools,
+                # Minimal LLM config required for creation
+                llm_config={
+                    "model": "gemini/gemini-2.5-flash",
+                    "model_endpoint_type": "openai",
+                    "context_window": 128000
+                }
             )
             
             logger.info(f"Created Letta agent {agent.id} for user {user_id}")
