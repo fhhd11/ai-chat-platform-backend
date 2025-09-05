@@ -50,8 +50,7 @@ async def get_user_usage(
             "budget_info": budget_info or {
                 "max_budget": 0,
                 "current_spend": 0,
-                "budget_duration": "1mo",
-                "budget_reset": True
+                "budget_duration": "1mo"
             },
             "summary": {
                 "total_messages": db_usage["total_usage"]["total_messages"],
@@ -170,7 +169,6 @@ async def reset_billing_key(
 async def update_user_budget(
     max_budget: float,
     duration: str = "1mo",
-    reset: bool = True,
     current_user: UserProfile = Depends(get_current_user)
 ):
     """Update user budget settings"""
@@ -202,8 +200,7 @@ async def update_user_budget(
         success = await litellm_service.update_user_budget(
             user_id=current_user.id,
             max_budget=max_budget,
-            duration=duration,
-            reset=reset
+            duration=duration
         )
         
         if not success:
@@ -216,8 +213,7 @@ async def update_user_budget(
             "status": "success",
             "message": f"Budget updated to ${max_budget} for {duration}",
             "max_budget": max_budget,
-            "duration": duration,
-            "reset_enabled": reset
+            "duration": duration
         }
         
     except HTTPException:
@@ -244,7 +240,6 @@ async def get_user_budget(
                 "max_budget": settings.user_default_budget,
                 "current_spend": 0,
                 "budget_duration": settings.user_budget_duration,
-                "budget_reset": settings.user_budget_reset,
                 "budget_remaining": settings.user_default_budget,
                 "status": "default_budget"
             }

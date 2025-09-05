@@ -23,12 +23,11 @@ class LiteLLMService:
             from app.config import settings
             
             async with httpx.AsyncClient(timeout=30.0) as client:
-                # Create user with budget configuration
+                # Create user with budget configuration (remove budget_reset - not supported by LiteLLM API)
                 user_data = {
                     "user_id": user_id,
                     "max_budget": settings.user_default_budget,
-                    "budget_duration": settings.user_budget_duration,
-                    "budget_reset": settings.user_budget_reset
+                    "budget_duration": settings.user_budget_duration
                 }
                 
                 response = await client.post(
@@ -202,21 +201,21 @@ class LiteLLMService:
             logger.error(f"Error deleting user: {e}")
             raise
 
-    async def update_user_budget(self, user_id: str, max_budget: float, duration: str = "1mo", reset: bool = True) -> bool:
-        """Update user budget settings"""
+    async def update_user_budget(self, user_id: str, max_budget: float, duration: str = "1mo") -> bool:
+        """Update user budget settings using /user/update endpoint"""
         try:
             async with httpx.AsyncClient(timeout=30.0) as client:
-                budget_data = {
+                # Use /user/update endpoint instead of /user/budget
+                update_data = {
                     "user_id": user_id,
                     "max_budget": max_budget,
-                    "budget_duration": duration,
-                    "budget_reset": reset
+                    "budget_duration": duration
                 }
                 
                 response = await client.post(
-                    f"{self.base_url}/user/budget",
+                    f"{self.base_url}/user/update", 
                     headers=self.headers,
-                    json=budget_data
+                    json=update_data
                 )
                 
                 if response.status_code in [200, 201]:
@@ -231,11 +230,12 @@ class LiteLLMService:
             return False
 
     async def get_user_budget(self, user_id: str) -> Optional[Dict[str, Any]]:
-        """Get user budget information"""
+        """Get user budget information using /user/info endpoint"""
         try:
             async with httpx.AsyncClient(timeout=10.0) as client:
+                # Use /user/info endpoint instead of /user/budget
                 response = await client.get(
-                    f"{self.base_url}/user/budget",
+                    f"{self.base_url}/user/info",
                     headers=self.headers,
                     params={"user_id": user_id}
                 )
