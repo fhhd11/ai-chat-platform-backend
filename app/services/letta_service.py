@@ -37,7 +37,10 @@ class LettaService:
                 ]
             )
             
-            # First create agent with basic config to get the ID
+            # Create agent with user-specific proxy endpoint using user_id as placeholder
+            # We'll use user_id first, then store the mapping of real agent_id -> user_id
+            temp_endpoint = f"{settings.backend_base_url}/api/v1/llm-proxy/user-{user_id}"
+            
             agent = self.client.agents.create(
                 memory_blocks=[
                     {
@@ -48,42 +51,25 @@ class LettaService:
                     for block in config.memory_blocks
                 ],
                 tools=config.tools,
-                # Minimal LLM config required for creation
+                # LLM config with temporary user-based endpoint
                 llm_config={
                     "model": "gemini/gemini-2.5-flash",
                     "model_endpoint_type": "openai",
+                    "model_endpoint": temp_endpoint,
+                    "provider_name": "proxy",
                     "context_window": 128000
                 },
-                # Minimal embedding config required for creation  
+                # Embedding config with temporary user-based endpoint  
                 embedding_config={
                     "embedding_model": "text-embedding-ada-002",
                     "embedding_endpoint_type": "openai",
+                    "embedding_endpoint": temp_endpoint,
+                    "provider_name": "proxy",
                     "embedding_dim": 1536
                 }
             )
             
-            logger.info(f"Created Letta agent {agent.id} for user {user_id}")
-            
-            # Now update the agent with proxy endpoint using actual agent ID
-            updated_agent = self.client.agents.update(
-                agent_id=agent.id,
-                llm_config={
-                    "model": "gemini/gemini-2.5-flash",  # Gemini model configured on LiteLLM
-                    "model_endpoint_type": "openai",
-                    "model_endpoint": f"{settings.backend_base_url}/api/v1/llm-proxy/{agent.id}",
-                    "provider_name": "proxy",
-                    "context_window": 128000  # Gemini 2.5 Flash context window
-                },
-                embedding_config={
-                    "embedding_model": "text-embedding-ada-002",
-                    "embedding_endpoint_type": "openai", 
-                    "embedding_endpoint": f"{settings.backend_base_url}/api/v1/llm-proxy/{agent.id}",
-                    "provider_name": "proxy",
-                    "embedding_dim": 1536  # text-embedding-ada-002 dimensions
-                }
-            )
-            
-            logger.info(f"Updated Letta agent {agent.id} with proxy endpoint")
+            logger.info(f"Created Letta agent {agent.id} with user-based proxy endpoint for user {user_id}")
             return agent.id
             
         except Exception as e:
