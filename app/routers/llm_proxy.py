@@ -90,7 +90,7 @@ async def proxy_regular_request(request_body: Dict[str, Any], litellm_key: str) 
     
     litellm_url = f"{settings.litellm_base_url}/chat/completions"
     
-    async with httpx.AsyncClient(timeout=60.0) as client:
+    async with httpx.AsyncClient(timeout=300.0) as client:  # 5 minutes for GPT-4o
         try:
             response = await client.post(
                 litellm_url,
@@ -125,7 +125,7 @@ async def proxy_streaming_request(request_body: Dict[str, Any], litellm_key: str
     litellm_url = f"{settings.litellm_base_url}/chat/completions"
     
     async def stream_generator() -> AsyncIterator[str]:
-        async with httpx.AsyncClient(timeout=60.0) as client:
+        async with httpx.AsyncClient(timeout=300.0) as client:  # 5 minutes for GPT-4o
             try:
                 async with client.stream(
                     "POST",
