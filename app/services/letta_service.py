@@ -51,14 +51,14 @@ class LettaService:
                 llm_config={
                     "model": "gemini/gemini-2.5-flash",  # Gemini model configured on LiteLLM
                     "model_endpoint_type": "openai",
-                    "model_endpoint": f"{settings.backend_base_url}/api/v1/llm-proxy/agent-{user_id}/chat/completions",
+                    "model_endpoint": f"{settings.backend_base_url}/api/v1/llm-proxy/agent-{user_id}",
                     "provider_name": "proxy",
                     "context_window": 128000  # Gemini 2.5 Flash context window
                 },
                 embedding_config={
                     "embedding_model": "text-embedding-ada-002",
                     "embedding_endpoint_type": "openai", 
-                    "embedding_endpoint": f"{settings.backend_base_url}/api/v1/llm-proxy/agent-{user_id}/embeddings",
+                    "embedding_endpoint": f"{settings.backend_base_url}/api/v1/llm-proxy/agent-{user_id}",
                     "provider_name": "proxy",
                     "embedding_dim": 1536  # text-embedding-ada-002 dimensions
                 },
