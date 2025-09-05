@@ -30,7 +30,8 @@
       "Bash(JWT_TOKEN=\"eyJhbGciOiJIUzI1NiIsImtpZCI6InBCMHFmdEVVVHFuRkxoaUUiLCJ0eXAiOiJKV1QifQ.eyJpc3MiOiJodHRwczovL3B0Y3BlbWZva3dqZ3BqZ21iZ29qLnN1cGFiYXNlLmNvL2F1dGgvdjEiLCJzdWIiOiIxYjYxNmRjNi1hZmQxLTQxZjItODk4MS1lODM1NDk1YzI3OWEiLCJhdWQiOiJhdXRoZW50aWNhdGVkIiwiZXhwIjoxNzU3MDkyMDIzLCJpYXQiOjE3NTcwODg0MjMsImVtYWlsIjoiZ3B0NG90ZXN0QGV4YW1wbGUuY29tIiwicGhvbmUiOiIiLCJhcHBfbWV0YWRhdGEiOnsicHJvdmlkZXIiOiJlbWFpbCIsInByb3ZpZGVycyI6WyJlbWFpbCJdfSwidXNlcl9tZXRhZGF0YSI6eyJlbWFpbF92ZXJpZmllZCI6dHJ1ZX0sInJvbGUiOiJhdXRoZW50aWNhdGVkIiwiYWFsIjoiYWFsMSIsImFtciI6W3sibWV0aG9kIjoicGFzc3dvcmQiLCJ0aW1lc3RhbXAiOjE3NTcwODg0MjN9XSwic2Vzc2lvbl9pZCI6IjQ3OTlkZDAyLWUzNmQtNDliOS04ZTU2LTY2MWFjYmQyNmQxMCIsImlzX2Fub255bW91cyI6ZmFsc2V9.alwPXbFl4EW6ZjoTRt8EVvi1uzCG1YldDNRD5kvrHyk\")",
       "WebFetch(domain:litellm-production-1c8b.up.railway.app)",
       "WebFetch(domain:docs.litellm.ai)",
-      "WebFetch(domain:github.com)"
+      "WebFetch(domain:github.com)",
+      "Bash(tree:*)"
     ],
     "deny": [],
     "ask": []

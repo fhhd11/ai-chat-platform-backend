@@ -1,140 +1,287 @@
-# AI Chat Platform Backend
+# AI Chat Platform - Backend
 
-Backend API для AI Chat Platform с интеграцией Letta и LiteLLM.
+Персонализированная платформа чата с ИИ, которая создает уникальных агентов для каждого пользователя с долгосрочной памятью всех взаимодействий.
 
-## Архитектура
+## 🚀 Особенности
+
+- **Персональные ИИ агенты** - каждый пользователь получает уникальный агент с памятью
+- **Долгосрочная память** - агенты помнят всю историю взаимодействий
+- **Управление бюджетом** - контроль расходов на LLM запросы
+- **Потоковые ответы** - реальное время через Server-Sent Events
+- **Безопасная аутентификация** - JWT токены через Supabase Auth
+- **Масштабируемая архитектура** - готова к росту нагрузки
+
+## 🏗️ Архитектура
 
 ```
-User → FastAPI Backend → Letta Agent → LLM Proxy → LiteLLM → Gemini API
+Frontend ↔ FastAPI Backend ↔ Letta (Агенты) + LiteLLM (Биллинг) + Supabase (DB/Auth)
 ```
 
-### Ключевые компоненты
-
-- **FastAPI Backend** - основное API
-- **Letta** - статeful AI агенты с памятью
-- **LiteLLM** - биллинг прокси для LLM провайдеров
-- **LLM Proxy** - промежуточный слой для индивидуальных API ключей
+### Основные компоненты:
+- **FastAPI** - основное API приложение
+- **Letta** - статeful агенты с памятью  
+- **LiteLLM** - прокси для биллинга LLM запросов
 - **Supabase** - аутентификация и база данных
 
-## LLM Proxy Layer
+## 📋 Требования
 
-Решает проблему индивидуального биллинга для каждого пользователя:
+- Python 3.9+
+- PostgreSQL (через Supabase)
+- Доступ к внешним сервисам: Letta, LiteLLM
 
-1. Каждый Letta агент настроен на уникальный proxy endpoint
-2. Proxy получает запросы от Letta с глобальным ключом
-3. Proxy проксирует запросы в LiteLLM с индивидуальным ключом пользователя
-4. Биллинг работает корректно для каждого пользователя
+## ⚡ Быстрый старт
 
-## Переменные окружения
+### 1. Установка зависимостей
+
+```bash
+pip install -r requirements.txt
+```
+
+### 2. Настройка переменных окружения
+
+```bash
+cp .env.example .env
+```
+
+Заполните переменные в `.env` файле:
 
 ```env
-# FastAPI Configuration
-SECRET_KEY=your-super-secret-key
+# Supabase
+SUPABASE_URL=your_supabase_url
+SUPABASE_ANON_KEY=your_anon_key
+SUPABASE_SERVICE_KEY=your_service_key
+
+# Letta
+LETTA_BASE_URL=https://lettalettalatest-production-4de4.up.railway.app
+LETTA_API_TOKEN=  # Оставить пустым для self-hosted
+
+# LiteLLM
+LITELLM_BASE_URL=https://litellm-production-1c8b.up.railway.app
+LITELLM_MASTER_KEY=your_master_key
+
+# Настройки бюджета пользователей
+USER_DEFAULT_BUDGET=10.0  # USD
+USER_BUDGET_DURATION=1mo  # 1d, 1w, 1mo, 3mo, 6mo, 1y
+
+# FastAPI
+SECRET_KEY=your_secret_key
 ENVIRONMENT=development
 LOG_LEVEL=INFO
-
-# Supabase Configuration
-SUPABASE_URL=your-supabase-url
-SUPABASE_ANON_KEY=your-anon-key
-SUPABASE_SERVICE_KEY=your-service-key
-
-# Letta Configuration
-LETTA_BASE_URL=your-letta-url
-LETTA_API_TOKEN=your-letta-token
-LETTA_GLOBAL_API_KEY=global-key-for-proxy
-
-# LiteLLM Configuration  
-LITELLM_BASE_URL=your-litellm-url
-LITELLM_MASTER_KEY=your-litellm-master-key
-
-# Backend Configuration
-BACKEND_BASE_URL=your-backend-url
-
-# JWT Configuration
-JWT_ALGORITHM=HS256
-JWT_EXPIRE_MINUTES=30
-
-# CORS Configuration
-ALLOWED_ORIGINS=http://localhost:3000,http://localhost:8000
 ```
 
-## API Endpoints
-
-### Authentication
-- `POST /api/v1/auth/register` - Регистрация пользователя
-- `POST /api/v1/auth/login` - Авторизация
-
-### Chat
-- `POST /api/v1/chat/message` - Отправка сообщения агенту
-- `GET /api/v1/chat/history` - История сообщений
-
-### Agent Management
-- `GET /api/v1/agent/status` - Статус агента
-- `GET /api/v1/agent/memory` - Память агента
-
-### User Management
-- `GET /api/v1/user/profile` - Профиль пользователя
-- `GET /api/v1/user/usage` - Статистика использования
-
-### LLM Proxy (Internal)
-- `POST /api/v1/llm-proxy/{agent_id}/chat/completions` - Proxy для LLM запросов
-- `POST /api/v1/llm-proxy/{agent_id}/embeddings` - Proxy для embeddings
-- `GET /api/v1/llm-proxy/{agent_id}/test` - Тест proxy
-
-## Деплой
-
-### Docker
-```bash
-docker-compose build
-docker-compose up -d
-```
-
-### Railway
-1. Подключить GitHub репозиторий
-2. Настроить переменные окружения
-3. Деплой произойдет автоматически
-
-## Разработка
+### 3. Запуск локального сервера
 
 ```bash
-# Установка зависимостей
-pip install -r requirements.txt
-
-# Запуск в режиме разработки
+# Запуск с автоперезагрузкой
 uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+
+# Или через main.py
+python -m app.main
 ```
 
-## Тестирование
+API будет доступно по адресу: `http://localhost:8000`
 
-### Регистрация нового пользователя
+Документация API: `http://localhost:8000/docs` (только в development режиме)
+
+## 🐳 Docker
+
+### Сборка и запуск через Docker
+
 ```bash
-curl -X POST "http://localhost:8000/api/v1/auth/register" \
-  -H "Content-Type: application/json" \
-  -d '{"email": "test@example.com", "password": "password123", "name": "Test User"}'
+# Сборка образа
+docker build -t ai-chat-backend .
+
+# Запуск контейнера
+docker run -p 8000:8000 --env-file .env ai-chat-backend
 ```
 
-### Авторизация
+### Docker Compose
+
 ```bash
-curl -X POST "http://localhost:8000/api/v1/auth/login" \
+# Запуск всех сервисов
+docker-compose up -d
+
+# Остановка
+docker-compose down
+```
+
+## 📚 Документация
+
+- **[API Documentation](API_DOCUMENTATION.md)** - Полная документация по всем endpoint'ам
+- **[Architecture](ARCHITECTURE.md)** - Подробное описание архитектуры системы
+- **[CLAUDE.md](CLAUDE.md)** - Инструкции для Claude Code разработки
+
+## 🛠️ Основные endpoint'ы
+
+### Аутентификация
+```
+POST /api/v1/auth/register    # Регистрация пользователя
+POST /api/v1/auth/login       # Вход в систему
+GET  /api/v1/auth/me          # Текущий пользователь
+```
+
+### Чат
+```
+POST /api/v1/chat/message     # Отправить сообщение (с потоковым ответом)
+GET  /api/v1/chat/history     # История сообщений
+```
+
+### Пользователь
+```
+GET  /api/v1/user/profile     # Профиль пользователя
+GET  /api/v1/user/usage       # Статистика использования
+GET  /api/v1/user/budget      # Информация о бюджете
+POST /api/v1/user/budget      # Обновление бюджета
+```
+
+### Агент
+```
+GET  /api/v1/agent/status     # Статус агента
+GET  /api/v1/agent/memory     # Память агента
+POST /api/v1/agent/memory     # Обновление памяти
+POST /api/v1/agent/reset      # Сброс агента
+```
+
+## 🔧 Разработка
+
+### Структура проекта
+
+```
+backend/
+├── app/
+│   ├── main.py              # Основное FastAPI приложение
+│   ├── config.py            # Конфигурация
+│   ├── models/              # Pydantic модели
+│   ├── routers/             # API маршруты
+│   ├── services/            # Бизнес-логика
+│   └── utils/               # Вспомогательные функции
+├── requirements.txt
+├── .env.example
+├── Dockerfile
+├── docker-compose.yml
+└── README.md
+```
+
+### Добавление новых зависимостей
+
+```bash
+pip install package_name
+pip freeze > requirements.txt
+```
+
+### Линтинг и форматирование
+
+```bash
+# Black для форматирования
+black app/
+
+# isort для импортов
+isort app/
+
+# Проверка типов с mypy
+mypy app/
+```
+
+## 🚀 Деплой
+
+### Railway (Production)
+
+Приложение автоматически деплоится на Railway при push в main ветку.
+
+Production URL: `https://ai-chat-backend-production.up.railway.app`
+
+### Переменные окружения для production
+
+Убедитесь, что все необходимые переменные настроены в Railway:
+- Все Supabase ключи
+- LiteLLM мастер-ключ  
+- Настройки бюджета пользователей
+- SECRET_KEY для JWT
+
+## 🧪 Тестирование
+
+### Проверка здоровья API
+
+```bash
+curl https://ai-chat-backend-production.up.railway.app/health
+```
+
+### Регистрация тестового пользователя
+
+```bash
+curl -X POST "https://ai-chat-backend-production.up.railway.app/api/v1/auth/register" \
   -H "Content-Type: application/json" \
-  -d '{"email": "test@example.com", "password": "password123"}'
+  -d '{"email": "test@example.com", "password": "testpass123"}'
 ```
 
 ### Отправка сообщения
+
 ```bash
-curl -X POST "http://localhost:8000/api/v1/chat/message" \
+# Получить токен после регистрации, затем:
+curl -X POST "https://ai-chat-backend-production.up.railway.app/api/v1/chat/message" \
   -H "Authorization: Bearer YOUR_JWT_TOKEN" \
   -H "Content-Type: application/json" \
-  -d '{"content": "Hello! Can you introduce yourself?"}'
+  -d '{"content": "Привет! Как дела?"}'
 ```
 
-## Технологии
+## 🔍 Мониторинг
 
-- **FastAPI** - веб-фреймворк
-- **Pydantic** - валидация данных
-- **SQLAlchemy** - ORM
-- **Alembic** - миграции БД
-- **Letta** - AI агенты
-- **LiteLLM** - LLM прокси
-- **Supabase** - BaaS
-- **Docker** - контейнеризация
+### Логи
+
+```bash
+# Локальные логи
+tail -f logs/app.log
+
+# Railway логи
+railway logs
+```
+
+### Health checks
+
+- `GET /health` - здоровье API
+- `GET /api/v1/user/health` - здоровье аккаунта пользователя
+
+## ⚠️ Важные замечания
+
+### Безопасность
+- Никогда не коммитьте `.env` файл
+- Используйте сильные SECRET_KEY в production
+- Регулярно обновляйте зависимости
+
+### Производительность  
+- Все операции асинхронные
+- Потоковые ответы для чата
+- Подключение к базе данных через connection pooling
+
+### Биллинг
+- Пользователи создаются с лимитом бюджета
+- Автоматическое отслеживание расходов через LiteLLM
+- Бюджеты сбрасываются автоматически по расписанию
+
+## 🤝 Вклад в проект
+
+1. Fork репозиторий
+2. Создайте feature ветку (`git checkout -b feature/AmazingFeature`)
+3. Коммитьте изменения (`git commit -m 'Add some AmazingFeature'`)
+4. Push в ветку (`git push origin feature/AmazingFeature`)
+5. Откройте Pull Request
+
+## 📞 Поддержка
+
+При возникновении проблем:
+
+1. Проверьте логи приложения
+2. Убедитесь, что все внешние сервисы доступны
+3. Проверьте настройки переменных окружения
+4. Создайте issue в репозитории с подробным описанием проблемы
+
+## 📄 Лицензия
+
+Этот проект создан для демонстрационных целей.
+
+## 🔗 Полезные ссылки
+
+- [FastAPI Documentation](https://fastapi.tiangolo.com/)
+- [Letta Documentation](https://docs.letta.com/)
+- [LiteLLM Documentation](https://docs.litellm.ai/)
+- [Supabase Documentation](https://supabase.com/docs)
