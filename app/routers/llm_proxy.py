@@ -43,11 +43,14 @@ async def verify_letta_request(request: Request) -> bool:
     return True
 
 
+async def verify_letta_dependency(request: Request):
+    return await verify_letta_request(request)
+
 @router.post("/{agent_id}/chat/completions")
 async def proxy_llm_request(
     agent_id: str, 
     request: Request,
-    _: bool = Depends(lambda req=request: verify_letta_request(req))
+    _: bool = Depends(verify_letta_dependency)
 ):
     """
     Proxy endpoint for Letta agents.
@@ -161,7 +164,7 @@ async def proxy_streaming_request(request_body: Dict[str, Any], litellm_key: str
 async def proxy_embeddings_request(
     agent_id: str,
     request: Request,
-    _: bool = Depends(lambda req=request: verify_letta_request(req))
+    _: bool = Depends(verify_letta_dependency)
 ):
     """Proxy embeddings request to LiteLLM"""
     try:
