@@ -18,6 +18,7 @@ class UserResponse(BaseModel):
     id: str
     email: str
     name: Optional[str] = None
+    letta_agent_id: Optional[str] = None
     created_at: datetime
     
     class Config:

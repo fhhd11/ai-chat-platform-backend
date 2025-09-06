@@ -510,10 +510,9 @@ const UserDashboard: React.FC<{ token: string }> = ({ token }) => {
 interface UserProfile {
   id: string;
   email: string;
-  created_at: string;
+  name?: string;
   letta_agent_id: string;
-  litellm_key: string;
-  agent_status: string;
+  created_at: string;
 }
 
 interface Message {

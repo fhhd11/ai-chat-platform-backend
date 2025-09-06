@@ -92,10 +92,9 @@ Authorization: Bearer <jwt_token>
 {
   "id": "user_id",
   "email": "user@example.com",
-  "created_at": "2025-01-01T00:00:00Z",
+  "name": "User Name",
   "letta_agent_id": "agent_id",
-  "litellm_key": "llm_api_key",
-  "agent_status": "active"
+  "created_at": "2025-01-01T00:00:00Z"
 }
 ```
 

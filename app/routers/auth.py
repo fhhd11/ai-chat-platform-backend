@@ -66,6 +66,7 @@ async def register(user_data: UserRegister):
                 id=user_profile.id,
                 email=user_profile.email,
                 name=user_profile.name,  # Now using name from database
+                letta_agent_id=user_profile.letta_agent_id,
                 created_at=user_profile.created_at
             )
         )
@@ -112,6 +113,7 @@ async def login(user_data: UserLogin):
                 id=user_profile.id,
                 email=user_profile.email,
                 name=user_profile.name,
+                letta_agent_id=user_profile.letta_agent_id,
                 created_at=user_profile.created_at
             )
         )
@@ -161,6 +163,7 @@ async def refresh_token(credentials: HTTPAuthorizationCredentials = Depends(secu
                 id=user_profile.id,
                 email=user_profile.email,
                 name=user_profile.name,
+                letta_agent_id=user_profile.letta_agent_id,
                 created_at=user_profile.created_at
             )
         )
@@ -181,6 +184,7 @@ async def get_current_user_info(current_user: UserProfile = Depends(get_current_
             id=current_user.id,
             email=current_user.email,
             name=current_user.name,
+            letta_agent_id=current_user.letta_agent_id,
             created_at=current_user.created_at
         )
         
